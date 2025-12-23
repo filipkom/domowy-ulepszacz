@@ -13,6 +13,13 @@ interface WeatherData {
   description: string;
 }
 
+// Stała lokalizacja: Rybnik, ul. Polna
+const LOCATION = {
+  latitude: 50.0971,
+  longitude: 18.5463,
+  city: "Rybnik"
+};
+
 export const WeatherWidget = ({ onTemperatureUpdate }: WeatherWidgetProps) => {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,21 +30,8 @@ export const WeatherWidget = ({ onTemperatureUpdate }: WeatherWidgetProps) => {
     setError(null);
 
     try {
-      // Get user location
-      const position = await new Promise<GeolocationPosition>(
-        (resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 10000,
-            enableHighAccuracy: true,
-          });
-        }
-      );
-
-      const { latitude, longitude } = position.coords;
-
-      // Use Open-Meteo API (free, no API key required)
       const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${LOCATION.latitude}&longitude=${LOCATION.longitude}&current=temperature_2m,weather_code&timezone=auto`
       );
 
       if (!response.ok) throw new Error("Błąd pobierania pogody");
@@ -45,20 +39,9 @@ export const WeatherWidget = ({ onTemperatureUpdate }: WeatherWidgetProps) => {
       const data = await response.json();
       const temp = Math.round(data.current.temperature_2m);
 
-      // Get city name from reverse geocoding
-      const geoResponse = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-      );
-      const geoData = await geoResponse.json();
-      const city =
-        geoData.address?.city ||
-        geoData.address?.town ||
-        geoData.address?.village ||
-        "Nieznana lokalizacja";
-
       const weatherData: WeatherData = {
         temp,
-        city,
+        city: LOCATION.city,
         description: getWeatherDescription(data.current.weather_code),
       };
 
@@ -66,13 +49,8 @@ export const WeatherWidget = ({ onTemperatureUpdate }: WeatherWidgetProps) => {
       onTemperatureUpdate(temp);
       toast.success(`Temperatura zewnętrzna: ${temp}°C`);
     } catch (err) {
-      if (err instanceof GeolocationPositionError) {
-        setError("Brak dostępu do lokalizacji");
-        toast.error("Włącz dostęp do lokalizacji w ustawieniach przeglądarki");
-      } else {
-        setError("Błąd pobierania pogody");
-        toast.error("Nie udało się pobrać danych pogodowych");
-      }
+      setError("Błąd pobierania pogody");
+      toast.error("Nie udało się pobrać danych pogodowych");
     } finally {
       setLoading(false);
     }
