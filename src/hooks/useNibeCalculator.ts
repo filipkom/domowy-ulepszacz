@@ -30,6 +30,10 @@ export const useNibeCalculator = ({
   const [results, setResults] = useState<CalculationResults | null>(null);
 
   useEffect(() => {
+    // Stałe dla dobrze ocieplonego domu
+    const HEAT_LOSS_COEFFICIENT = 120; // W na °C różnicy (dobrze ocieplony dom)
+    const DUTY_CYCLE = 0.70; // Pompa pracuje ~70% czasu
+
     let curve = 3;
     let offset = 0;
     let stopHeating = 0;
@@ -76,7 +80,8 @@ export const useNibeCalculator = ({
     if (outsideTemp < -15) cop = 2.1;
 
     const deltaT = targetTemp - outsideTemp;
-    let watts = (deltaT * 200) / cop;
+    // Zaktualizowana formuła: współczynnik izolacji × duty cycle
+    let watts = (deltaT * HEAT_LOSS_COEFFICIENT * DUTY_CYCLE) / cop;
     if (outsideTemp > stopHeating) watts = 15;
 
     const dailyCost = ((watts * 24) / 1000) * kwhPrice;
