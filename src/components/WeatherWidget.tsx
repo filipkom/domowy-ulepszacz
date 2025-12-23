@@ -68,16 +68,48 @@ export const WeatherWidget = ({ onTemperatureUpdate }: WeatherWidgetProps) => {
   };
 
   useEffect(() => {
-    // Try to load cached weather on mount
-    const cached = localStorage.getItem("nibe-weather");
-    if (cached) {
+    const CACHE_DURATION = 30 * 60 * 1000; // 30 minut
+
+    const checkAndFetch = () => {
+      const cached = localStorage.getItem("nibe-weather");
+      if (!cached) {
+        fetchWeather();
+        return;
+      }
       const data = JSON.parse(cached);
       const cacheAge = Date.now() - data.timestamp;
-      // Use cache if less than 30 minutes old
-      if (cacheAge < 30 * 60 * 1000) {
+      if (cacheAge > CACHE_DURATION) {
+        fetchWeather();
+      } else {
         setWeather(data.weather);
+        onTemperatureUpdate(data.weather.temp);
       }
-    }
+    };
+
+    checkAndFetch();
+
+    // Odświeżaj co 30 minut
+    const interval = setInterval(fetchWeather, CACHE_DURATION);
+
+    // Odśwież gdy użytkownik wraca do karty
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const cached = localStorage.getItem("nibe-weather");
+        if (cached) {
+          const cacheAge = Date.now() - JSON.parse(cached).timestamp;
+          if (cacheAge > CACHE_DURATION) {
+            fetchWeather();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
