@@ -23,7 +23,7 @@ const Index = () => {
   const [houseStatus, setHouseStatus] = useState<HouseStatus>("renovation_dry");
   const [targetTemp, setTargetTemp] = useState(21);
   const [outsideTemp, setOutsideTemp] = useState(0);
-  const [kwhPrice, setKwhPrice] = useState(1.15);
+  const [kwhPrice, setKwhPrice] = useState(1.00); // Cena brutto z dystrybucją
 
   const results = useNibeCalculator({
     houseStatus,
